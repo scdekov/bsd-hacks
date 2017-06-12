@@ -25,14 +25,16 @@ def transform_to_result_lines(result):
     return filter(bool, map(str.strip, result.split("\n")))
 
 
-def get_p4_command(username, cl_type='submitted', from_date='yesterday'):
+def get_p4_changes_cmd(username, cl_type='submitted', from_date='yesterday'):
     return "p4 changes -s {cl_type} -l -u {username} @$(date --date='{from_date}' +%Y/%m/%d),@now"\
         .format(username=username, cl_type=cl_type, from_date=from_date)
 
 
 def report_daily_for(username):
-    submitted_results = check_output([get_p4_command(username)], shell=True)
-    pending_results = check_output([get_p4_command(username, cl_type='pending', from_date='7 days ago')], shell=True)
+    last_work_day = 'yesterday' if date.today().weekday() != 4 else 'last friday'
+
+    submitted_results = check_output([get_p4_changes_cmd(username, from_date=last_work_day)], shell=True)
+    pending_results = check_output([get_p4_changes_cmd(username, cl_type='pending', from_date='7 days ago')], shell=True)
 
     work_done = defaultdict(list)
     crr_date = ''
@@ -71,4 +73,5 @@ def report_daily(usernames):
         report_daily_for(username)
 
 
-report_daily(['sdekov', 'dpaskov', 'gdimitrova', 'kdimitrov'])
+if date.today().weekday() < 5:
+    report_daily(['sdekov', 'dpaskov', 'gdimitrova', 'kdimitrov'])
